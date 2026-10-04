@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>זקן וגרזן: המשחק המלא</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body id="main-body" class="h-screen w-screen flex flex-col items-center bg-gray-900 relative overflow-hidden select-none">
+
+    <!-- HEADER -->
+    <div id="main-header"
+        class="w-full p-2 flex justify-between items-center z-50 absolute top-0 left-0 bg-gradient-to-b from-black/80 to-transparent pointer-events-none">
+
+        <div id="lobby-controls"
+            class="flex items-center gap-2 bg-black/40 px-3 py-1 rounded-full border border-white/10 pointer-events-auto">
+            <button onclick="toggleStudio()"
+                class="bg-gray-700/80 p-2 rounded-full border border-white/20 hover:bg-gray-600 text-xs flex gap-2 items-center px-3 text-white transition-colors">
+                ✏️ <span class="hidden md:inline">עריכה</span>
+            </button>
+            <button onclick="switchProfile()"
+                class="bg-red-600/80 p-2 rounded-full border border-white/20 hover:bg-red-500 text-xs flex gap-2 items-center px-3 text-white transition-colors">
+                👥 <span class="hidden md:inline">החלף שחקן</span>
+            </button>
+        </div>
+
+        <div class="flex items-center gap-2 bg-black/40 px-3 py-1 rounded-full border border-white/10 pointer-events-auto">
+            <span class="text-yellow-400 text-xl">🏆</span>
+            <span id="score-display" class="font-bold text-white">0</span>
+        </div>
+
+        <!-- LEVEL DISPLAY -->
+        <div class="flex items-center gap-2 bg-purple-900/40 px-3 py-1 rounded-full border border-purple-500/30 pointer-events-auto shadow-[0_0_10px_rgba(168,85,247,0.4)]">
+            <span class="text-purple-300 font-bold text-xs uppercase">Level</span>
+            <span id="level-display" class="font-bold text-white text-lg">1</span>
+        </div>
+
+        <div id="game-controls" class="hidden pointer-events-auto">
+            <button onclick="returnToMenu()"
+                class="bg-gray-700/80 p-2 rounded-full border border-white/20 hover:bg-gray-600 text-xs flex gap-2 items-center px-3 text-white transition-colors">
+                🏠 <span class="hidden md:inline">תפריט</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- PHASE DISPLAY (Floating pill under header) -->
+    <div id="phase-display"
+        class="absolute top-12 z-40 flex items-center gap-2 bg-black/60 px-4 py-1 rounded-full border border-white/10 pointer-events-none shadow-md backdrop-blur-sm">
+        <span class="text-green-400 text-base">⚡</span>
+        <span id="phase-text" class="font-bold text-xs tracking-widest text-green-300">LOBBY</span>
+    </div>
+
+    <!-- Battle Question Display -->
+    <div id="battle-question-ui"
+        class="absolute top-16 w-full flex flex-col items-center z-40 pointer-events-none transition-all duration-300 -translate-y-20 opacity-0">
+        <div class="bg-black/90 border-2 border-yellow-500 px-6 py-2 rounded-xl backdrop-blur-md shadow-lg mb-2">
+            <h2 id="battle-question-text" class="text-2xl font-black text-white neon-text">...</h2>
+        </div>
+        <div class="w-48 h-3 bg-gray-800 rounded-full border border-white/20 overflow-hidden shadow-lg relative">
+            <div id="timer-bar" class="h-full bg-red-600 w-full transition-all duration-[50ms] ease-linear"></div>
+            <div class="absolute inset-0 flex items-center justify-center text-[8px] font-bold text-white uppercase tracking-widest shadow-black drop-shadow-md">
+                מתקפת אויב
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN GAME STAGE -->
+    <div id="game-stage" class="flex-1 w-full h-full relative flex items-center justify-center game-mode anim-idle overflow-hidden">
+
+        <div class="absolute inset-0 bg-grid opacity-20 pointer-events-none"></div>
+
+        <!-- Armory UI (Top Center) -->
+        <div id="armory-ui"
+            class="absolute top-20 flex flex-col items-center transition-all duration-300 opacity-0 pointer-events-none z-30">
+            <div class="bg-black/80 border-2 border-blue-500 px-6 py-3 rounded-xl backdrop-blur-md shadow-[0_0_20px_rgba(59,130,246,0.5)] text-center">
+                <p class="text-blue-300 text-xs mb-1 uppercase tracking-widest font-bold">טען כפפה</p>
+                <h2 id="target-word-he" class="text-3xl md:text-4xl font-black text-white neon-text">...</h2>
+            </div>
+            <div id="drop-hint" class="mt-2 text-blue-200 text-xs animate-bounce font-medium">⬇️ גרור או לחץ על המילה לטעינה</div>
+        </div>
+
+        <!-- Battle UI (HP Bars) -->
+        <div id="battle-ui"
+            class="absolute top-12 w-full max-w-lg px-4 flex justify-between items-start transition-all duration-300 opacity-0 pointer-events-none z-30 scale-90 origin-top">
+            <div class="w-2/5">
+                <div class="h-3 bg-gray-700 rounded-full overflow-hidden border border-white/20">
+                    <div class="h-full bg-green-500 w-full transition-all duration-300" id="player-hp-bar"></div>
+                </div>
+                <p class="text-[11px] mt-1 text-green-300 font-bold tracking-wide">גרימבל (GRIMBLE)</p>
+            </div>
+            <div class="w-2/5 text-right">
+                <div class="h-3 bg-gray-700 rounded-full overflow-hidden border border-white/20">
+                    <div class="h-full bg-red-500 w-full transition-all duration-300" id="enemy-hp-bar"></div>
+                </div>
+                <p id="enemy-name" class="text-[11px] mt-1 text-red-300 font-bold tracking-wide">הברון פון קלין</p>
+            </div>
+        </div>
+
+        <!-- CHARACTERS ARENA -->
+        <div id="characters-arena" class="relative w-full h-full max-w-[650px] max-h-[500px] flex items-center justify-center mt-[-20px] pointer-events-none">
+
+            <!-- ENEMY CONTAINER (Baron, Goblin, Skeleton) -->
+            <div id="enemy-container"
+                class="baron-container absolute right-4 md:right-8 top-1/2 transform -translate-y-1/2 translate-x-full transition-transform duration-700 z-10 pointer-events-auto">
+
+                <!-- ENEMY 1: BARON VON CLEAN (Levels 1-3) -->
+                <svg id="baron-svg" width="220" height="300" viewBox="0 0 200 300" class="enemy drop-shadow-2xl baron-idle">
+                    <defs>
+                        <linearGradient id="metalGrad" x1="0" y1="0" x2="1" y2="1">
+                            <stop offset="0%" stop-color="#cfd8dc" />
+                            <stop offset="50%" stop-color="#90a4ae" />
+                            <stop offset="100%" stop-color="#546e7a" />
+                        </linearGradient>
+                        <linearGradient id="suitGrad" x1="0" y1="0" x2="1" y2="0">
+                            <stop offset="0%" stop-color="#212121" />
+                            <stop offset="100%" stop-color="#000000" />
+                        </linearGradient>
+                    </defs>
+
+                    <ellipse cx="100" cy="270" rx="50" ry="8" fill="rgba(0,0,0,0.3)" />
+
+                    <!-- BODY Group -->
+                    <g id="baron-body" class="draggable rig-part baron-body">
+                        <ellipse cx="100" cy="140" rx="60" ry="70" fill="url(#suitGrad)" />
+                        <path d="M80 80 L120 80 L100 150 Z" fill="white" />
+                        <path d="M95 80 L105 80 L100 110 Z" fill="#d32f2f" />
+                    </g>
+
+                    <!-- Floating Hands -->
+                    <!-- LEFT HAND -->
+                    <g id="baron-hand-l" class="draggable rig-part baron-hand-l">
+                        <circle cx="0" cy="0" r="15" fill="white" />
+                        <path d="M-5 -5 L-5 5" stroke="#ccc" />
+                    </g>
+                    <!-- RIGHT HAND -->
+                    <g id="baron-hand-r" class="draggable rig-part baron-hand-r">
+                        <g transform="rotate(-10)">
+                            <rect x="-10" y="-10" width="30" height="70" fill="#546e7a" rx="5" />
+                            <rect x="-15" y="50" width="40" height="10" fill="#37474f" />
+                            <circle cx="5" cy="5" r="15" fill="white" />
+                        </g>
+                    </g>
+
+                    <!-- HEAD Group -->
+                    <g id="baron-head" class="draggable rig-part baron-head">
+                        <circle cx="0" cy="0" r="35" fill="#ffccbc" />
+                        <circle cx="10" cy="-5" r="10" fill="#212121" stroke="#fdd835" stroke-width="2" />
+                        <circle cx="10" cy="-5" r="4" fill="#f44336" class="laser-eye" />
+                        <circle cx="-10" cy="-3" r="3" fill="black" />
+                        <path d="M-20 -10 L0 -5" stroke="black" stroke-width="2" />
+                        <path d="M-15 15 Q0 10 15 15" fill="none" stroke="black" stroke-width="3" />
+                        <rect x="-30" y="-30" width="60" height="10" fill="#212121" />
+                        <rect x="-20" y="-70" width="40" height="40" fill="#212121" />
+                        <rect x="-20" y="-35" width="40" height="5" fill="#d32f2f" />
+                    </g>
+                </svg>
+
+                <!-- ENEMY 2: GOBLIN (Levels 4-6) -->
+                <svg id="goblin-svg" width="200" height="250" viewBox="0 0 200 250" class="enemy hidden drop-shadow-2xl baron-idle">
+                    <ellipse cx="100" cy="230" rx="40" ry="6" fill="rgba(0,0,0,0.3)" />
+
+                    <!-- Goblin Body -->
+                    <g id="goblin-body" class="draggable rig-part goblin-body">
+                        <rect x="-30" y="-40" width="60" height="80" rx="10" fill="#2e7d32" />
+                        <rect x="-25" y="-30" width="50" height="60" rx="5" fill="#43a047" />
+                        <rect x="-35" y="30" width="70" height="10" fill="#3e2723" />
+                    </g>
+
+                    <!-- Left Arm (with Club) -->
+                    <g id="goblin-arm-l" class="draggable rig-part goblin-arm-l">
+                        <rect x="-7" y="0" width="15" height="50" rx="5" fill="#2e7d32" />
+                        <circle cx="0" cy="50" r="9" fill="#2e7d32" />
+                        <path d="M-10 40 L-25 0 L10 -10 Z" fill="#795548" />
+                    </g>
+
+                    <!-- Right Arm -->
+                    <g id="goblin-arm-r" class="draggable rig-part goblin-arm-r">
+                        <rect x="-7" y="0" width="15" height="50" rx="5" fill="#2e7d32" />
+                        <circle cx="0" cy="50" r="9" fill="#2e7d32" />
+                    </g>
+
+                    <!-- Head -->
+                    <g id="goblin-head" class="draggable rig-part goblin-head">
+                        <path d="M-40 -10 L-70 -30 L-40 10 Z" fill="#2e7d32" />
+                        <path d="M40 -10 L70 -30 L40 10 Z" fill="#2e7d32" />
+                        <circle cx="0" cy="-10" r="45" fill="#4caf50" />
+                        <circle cx="-15" cy="-20" r="6" fill="#ffeb3b" />
+                        <circle cx="15" cy="-20" r="6" fill="#ffeb3b" />
+                        <circle cx="-15" cy="-20" r="2.5" fill="#000" />
+                        <circle cx="15" cy="-20" r="2.5" fill="#000" />
+                        <path d="M-20 15 Q0 25 20 15" stroke="#1b5e20" stroke-width="2" fill="none" />
+                        <path d="M-10 12 L-5 22 L0 12 L5 22 L10 12 Z" fill="#fff" />
+                    </g>
+                </svg>
+
+                <!-- ENEMY 3: SKELETON / DARK KNIGHT (Levels 7+) -->
+                <svg id="skeleton-svg" width="220" height="300" viewBox="0 0 200 300" class="enemy hidden drop-shadow-2xl baron-idle">
+                    <ellipse cx="100" cy="270" rx="50" ry="8" fill="rgba(0,0,0,0.3)" />
+                    <!-- Cloak -->
+                    <path d="M60 250 L140 250 L165 100 L35 100 Z" fill="#212121" />
+
+                    <!-- Ribcage Body -->
+                    <g id="skel-body" class="draggable rig-part skel-body">
+                        <rect x="-25" y="-40" width="50" height="80" rx="10" fill="#424242" />
+                        <path d="M-20 -30 L20 -30" stroke="#e0e0e0" stroke-width="4" />
+                        <path d="M-18 -15 L18 -15" stroke="#e0e0e0" stroke-width="4" />
+                        <path d="M-15 0 L15 0" stroke="#e0e0e0" stroke-width="4" />
+                        <path d="M-12 15 L12 15" stroke="#e0e0e0" stroke-width="4" />
+                    </g>
+
+                    <!-- Right Arm (Scythe) -->
+                    <g id="skel-arm-r" class="draggable rig-part skel-arm-r">
+                        <rect x="-4" y="-80" width="8" height="150" fill="#4e342e" rx="2" />
+                        <path d="M0 -75 Q-60 -70 -70 10 L-55 10 Q-45 -50 0 -60 Z" fill="#90a4ae" stroke="#cfd8dc" stroke-width="2" />
+                        <circle cx="0" cy="0" r="10" fill="#e0e0e0" />
+                    </g>
+
+                    <!-- Skull Head -->
+                    <g id="skel-head" class="draggable rig-part skel-head">
+                        <path d="M-30 0 Q-30 -40 0 -40 Q30 -40 30 0 Q30 30 0 35 Q-30 30 -30 0 Z" fill="#e0e0e0" />
+                        <ellipse cx="-12" cy="0" rx="8" ry="10" fill="#212121" />
+                        <ellipse cx="12" cy="0" rx="8" ry="10" fill="#212121" />
+                        <circle cx="-12" cy="0" r="2.5" fill="red" class="pulse-red" />
+                        <circle cx="12" cy="0" r="2.5" fill="red" class="pulse-red" />
+                        <path d="M-3 15 L0 10 L3 15 Z" fill="#212121" />
+                        <path d="M-15 25 L15 25" stroke="#212121" stroke-width="2" />
+                        <path d="M-10 22 L-10 28 M-5 22 L-5 28 M0 22 L0 28 M5 22 L5 28 M10 22 L10 28" stroke="#212121" stroke-width="2" />
+                    </g>
+                </svg>
+            </div>
+
+            <!-- GRIMBLE WRAPPER FOR MOVEMENT -->
+            <div id="grimble-wrapper"
+                class="w-full h-full flex items-center justify-center transition-transform duration-700 pointer-events-auto">
+
+                <!-- GRIMBLE SVG -->
+                <svg id="grimble-svg" class="grimble-container z-10" viewBox="0 0 500 500">
+                    <defs>
+                        <linearGradient id="armorGrad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stop-color="#546e7a" />
+                            <stop offset="100%" stop-color="#37474f" />
+                        </linearGradient>
+                        <linearGradient id="beardGrad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" style="stop-color:var(--beard-color-start, #f5f5f5)" />
+                            <stop offset="100%" style="stop-color:var(--beard-color-end, #bdbdbd)" />
+                        </linearGradient>
+                        <linearGradient id="axeGrad" x1="0" y1="0" x2="1" y2="1">
+                            <stop offset="0%" style="stop-color:var(--axe-blade-start, #8d6e63)" />
+                            <stop offset="100%" style="stop-color:var(--axe-blade-end, #4e342e)" />
+                        </linearGradient>
+                    </defs>
+                    <ellipse cx="250" cy="400" rx="80" ry="10" fill="rgba(0,0,0,0.3)" />
+
+                    <!-- RIG PART: RIGHT ARM & AXE -->
+                    <g id="rig-arm-right" class="rig-arm-right draggable">
+                        <circle cx="0" cy="0" r="12" fill="#ffccbc" />
+                        <rect x="-10" y="0" width="20" height="30" rx="5" fill="#ffccbc" />
+                        <rect x="-12" y="20" width="24" height="15" rx="3" fill="#5d4037" />
+                        <g transform="translate(0, 35)">
+                            <g transform="rotate(-30)">
+                                <rect x="-5" y="-10" width="10" height="130" rx="2" fill="#4e342e" />
+                                <g transform="translate(0, 100)">
+                                    <path d="M-5 10 L-40 -20 Q-60 10 -40 40 L-5 20 Z" fill="url(#axeGrad)" stroke="#3e2723" stroke-width="2" />
+                                    <path d="M5 10 L40 -20 Q60 10 40 40 L5 20 Z" fill="url(#axeGrad)" stroke="#3e2723" stroke-width="2" />
+                                    <path d="M-40 -20 Q-60 10 -40 40" fill="none" stroke="#ffca28" stroke-width="3" />
+                                    <path d="M40 -20 Q60 10 40 40" fill="none" stroke="#ffca28" stroke-width="3" />
+                                </g>
+                            </g>
+                            <circle cx="0" cy="0" r="14" fill="#ffab91" stroke="#bf360c" stroke-width="1" />
+                        </g>
+                    </g>
+
+                    <!-- RIG PART: TORSO -->
+                    <g id="rig-torso" class="rig-torso draggable">
+                        <ellipse cx="0" cy="0" rx="60" ry="55" fill="url(#armorGrad)" stroke="#263238" stroke-width="2" />
+                        <rect x="-55" y="-5" width="110" height="20" fill="#3e2723" rx="4" />
+                        <rect x="-15" y="-10" width="30" height="30" rx="4" fill="#ffca28" stroke="#f57f17" stroke-width="2" />
+                    </g>
+
+                    <!-- RIG PART: LEFT ARM & GAUNTLET (DROP ZONE) -->
+                    <g id="rig-arm-left" class="rig-arm-left draggable">
+                        <circle cx="0" cy="0" r="18" fill="#1565c0" />
+                        <rect x="-15" y="0" width="30" height="50" rx="8" fill="#1976d2" />
+                        <!-- Visual Glow -->
+                        <circle cx="0" cy="25" r="12" class="gauntlet-glow" pointer-events="none" />
+                        <circle cx="0" cy="50" r="18" fill="#0d47a1" />
+                        <path d="M-10 50 L10 50" stroke="#42a5f5" stroke-width="2" />
+                        <path d="M-10 58 L10 58" stroke="#42a5f5" stroke-width="2" />
+                        <!-- Drop Target Hitbox (Generous target for words) -->
+                        <circle id="drop-zone-highlight" cx="0" cy="25" r="50" fill="rgba(59,130,246,0.15)" stroke="#60a5fa" stroke-width="2" stroke-dasharray="4" style="pointer-events: auto; cursor: pointer;" />
+                    </g>
+
+                    <!-- RIG PART: HEAD & COSMETICS -->
+                    <g id="rig-head" class="rig-head draggable">
+                        <circle cx="0" cy="0" r="45" fill="#ffccbc" />
+                        <path d="M-46 -10 Q0 -60 46 -10 L46 -20 Q0 -70 -46 -20 Z" fill="#607d8b" />
+                        <path d="M-46 -10 L-46 -30 L46 -30 L46 -10 Z" fill="#455a64" />
+                        <circle cx="0" cy="-30" r="6" fill="#ffca28" />
+
+                        <!-- Top Hat -->
+                        <g id="grimble-hat" class="hidden">
+                            <rect x="-35" y="-50" width="70" height="20" fill="#212121" />
+                            <rect x="-25" y="-85" width="50" height="40" fill="#212121" />
+                            <rect x="-25" y="-55" width="50" height="5" fill="#e91e63" />
+                        </g>
+                        <!-- Horns on helmet -->
+                        <path d="M-35 -20 Q-60 -50 -45 -70" fill="none" stroke="#fff9c4" stroke-width="8" stroke-linecap="round" />
+                        <path d="M35 -20 Q60 -50 45 -70" fill="none" stroke="#fff9c4" stroke-width="8" stroke-linecap="round" />
+                        <!-- Eyes -->
+                        <g>
+                            <ellipse cx="-15" cy="0" rx="6" ry="7" fill="black" />
+                            <ellipse cx="15" cy="0" rx="6" ry="7" fill="black" />
+                            <circle cx="-13" cy="-3" r="2" fill="white" />
+                            <circle cx="17" cy="-3" r="2" fill="white" />
+                        </g>
+                        <!-- Eyebrows -->
+                        <path d="M-28 -12 L-5 -5" stroke="#e0e0e0" stroke-width="5" stroke-linecap="round" />
+                        <path d="M28 -12 L5 -5" stroke="#e0e0e0" stroke-width="5" stroke-linecap="round" />
+                        <!-- Nose -->
+                        <circle cx="0" cy="15" r="8" fill="#ffab91" />
+                        <!-- Mouth -->
+                        <path d="M-10 30 Q0 38 10 30" fill="none" stroke="#d84315" stroke-width="3" stroke-linecap="round" />
+
+                        <!-- Sunglasses -->
+                        <g id="grimble-glasses" class="hidden">
+                            <rect x="-24" y="-12" width="18" height="10" rx="2" fill="black" stroke="#ffd700" stroke-width="1" />
+                            <rect x="6" y="-12" width="18" height="10" rx="2" fill="black" stroke="#ffd700" stroke-width="1" />
+                            <line x1="-6" y1="-7" x2="6" y2="-7" stroke="#ffd700" stroke-width="1" />
+                        </g>
+                        <!-- Crown -->
+                        <g id="grimble-crown" class="hidden" transform="translate(0, -50)">
+                            <path d="M-25 0 L-15 -30 L0 -15 L15 -30 L25 0 Z" fill="#ffD700" stroke="#b8860b" stroke-width="1" />
+                            <circle cx="-25" cy="-30" r="3" fill="red" />
+                            <circle cx="-15" cy="-30" r="3" fill="blue" />
+                            <circle cx="0" cy="-15" r="3" fill="green" />
+                            <circle cx="15" cy="-30" r="3" fill="red" />
+                            <circle cx="25" cy="-30" r="3" fill="blue" />
+                        </g>
+
+                        <!-- Beard -->
+                        <g>
+                            <path d="M-45 10 Q0 15 45 10 Q60 80 40 110 Q0 150 -40 110 Q-60 80 -45 10 Z"
+                                fill="url(#beardGrad)" stroke="#bdbdbd" stroke-width="1" />
+                        </g>
+                    </g>
+                </svg>
+            </div>
+        </div>
+
+        <!-- MAIN MENU UI (Overlay inside stage during lobby) -->
+        <div id="main-menu-ui" class="absolute inset-0 flex flex-col items-center justify-center z-40 pointer-events-none">
+            <div class="mt-48 md:mt-56 flex flex-col items-center gap-3 pointer-events-auto">
+                <h1 id="home-title"
+                    class="text-yellow-400 text-3xl md:text-4xl mb-4 tracking-widest uppercase font-black drop-shadow-[0_0_10px_rgba(250,204,21,0.5)] text-center">
+                    הבית של גרזני
+                </h1>
+
+                <div class="flex flex-col gap-3 w-64">
+                    <button onclick="startArmoryPhase()"
+                        class="btn-primary px-8 py-3 rounded-xl text-xl font-bold text-white border-2 border-yellow-200 shadow-lg hover:scale-105 transition-transform flex items-center justify-center gap-2">
+                        <span>⚔️</span> צא לקרב
+                    </button>
+                    <button onclick="toggleShop()"
+                        class="btn-secondary px-8 py-2.5 rounded-xl text-lg font-bold text-white shadow-md hover:bg-gray-700 flex items-center justify-center gap-2">
+                        <span>🛒</span> חנות וציוד
+                    </button>
+                    <button onclick="toggleWordEditor()"
+                        class="bg-purple-600 hover:bg-purple-500 px-8 py-2.5 rounded-xl text-lg font-bold text-white shadow-md transition-colors flex items-center justify-center gap-2">
+                        <span>📚</span> ניהול מילים
+                    </button>
+                    <button onclick="switchProfile()"
+                        class="bg-red-600 hover:bg-red-500 px-8 py-2.5 rounded-xl text-lg font-bold text-white shadow-md transition-colors flex items-center justify-center gap-2">
+                        <span>👥</span> החלף שחקן
+                    </button>
+
+                    <!-- Studio Button -->
+                    <button onclick="toggleStudio()"
+                        class="mt-2 text-gray-400 hover:text-white text-xs uppercase tracking-widest opacity-60 hover:opacity-100 transition-all flex items-center justify-center gap-1">
+                        🛠️ מצב עריכה (Studio)
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Interactive Word Bank (Bottom for Armory) -->
+        <div id="word-bank"
+            class="absolute bottom-16 md:bottom-20 w-full flex justify-center flex-wrap gap-3 px-3 transition-all duration-300 z-50 translate-y-full hidden">
+        </div>
+
+        <!-- Interactive Battle Options (Bottom for Battle) -->
+        <div id="battle-options"
+            class="absolute bottom-4 md:bottom-8 w-full max-w-lg flex justify-center gap-2 px-3 transition-all duration-300 z-50 translate-y-full hidden">
+        </div>
+
+    </div> <!-- End game-stage -->
+
+
+    <!-- FULLSCREEN MODALS (Cleanly decoupled from stage transforms) -->
+
+    <!-- SHOP OVERLAY -->
+    <div id="shop-overlay"
+        class="hidden fixed inset-0 bg-gray-900/95 flex flex-col items-center justify-start pt-6 z-[70] backdrop-blur-md">
+        <div class="flex justify-between items-center w-full max-w-md px-6 mb-4">
+            <h2 class="text-3xl font-bold text-yellow-400 neon-text">החנות של גרימבל</h2>
+            <button onclick="toggleShop()" class="text-white hover:text-red-400 text-2xl transition-colors">✖️</button>
+        </div>
+
+        <div class="flex items-center gap-2 bg-black/60 px-5 py-2 rounded-full border border-yellow-500/30 mb-4">
+            <span class="text-gray-300 text-sm">המטבעות שלך:</span>
+            <span class="text-yellow-400 text-2xl font-black">🏆 <span id="shop-coins">0</span></span>
+        </div>
+
+        <div id="shop-items-container"
+            class="grid grid-cols-2 gap-3 w-full max-w-md px-4 overflow-y-auto pb-10 flex-1 min-h-0">
+            <!-- Dynamic Items Injected Here -->
+        </div>
+    </div>
+
+    <!-- PROFILE SELECTION OVERLAY -->
+    <div id="profile-selection-ui"
+        class="hidden fixed inset-0 bg-gray-950/95 flex flex-col items-center justify-center z-[80] backdrop-blur-md p-4">
+        <h2 class="text-4xl font-black text-white mb-2 tracking-wide drop-shadow-md">בחר שחקן</h2>
+        <p class="text-gray-400 text-sm mb-6">בחר פרופיל קיים או צור שחקן חדש להרפתקה</p>
+
+        <div id="profile-list" class="flex flex-wrap justify-center gap-4 mb-8 w-full max-w-2xl max-h-[50vh] overflow-y-auto p-2">
+            <!-- Profiles injected here -->
+        </div>
+
+        <div class="flex flex-col sm:flex-row gap-2 items-center w-full max-w-sm">
+            <input id="new-profile-name" type="text" placeholder="שם שחקן חדש"
+                class="bg-gray-800 text-white px-4 py-2.5 rounded-xl text-center border border-gray-600 focus:border-yellow-400 outline-none w-full flex-1"
+                maxlength="15" onkeydown="if(event.key==='Enter') createNewProfile()">
+            <button onclick="createNewProfile()"
+                class="bg-green-600 hover:bg-green-500 text-white px-5 py-2.5 rounded-xl font-bold whitespace-nowrap shadow-md transition-colors w-full sm:w-auto">
+                ➕ צור שחקן
+            </button>
+        </div>
+    </div>
+
+    <!-- WORD EDITOR OVERLAY -->
+    <div id="word-editor-overlay"
+        class="hidden fixed inset-0 bg-gray-900/95 flex flex-col items-center justify-start pt-6 z-[70] backdrop-blur-md">
+        <div class="flex justify-between items-center w-full max-w-md px-6 mb-4">
+            <h2 class="text-3xl font-bold text-purple-400">ניהול מאגר מילים</h2>
+            <button onclick="toggleWordEditor()" class="text-white hover:text-red-400 text-2xl transition-colors">✖️</button>
+        </div>
+
+        <div class="flex flex-col gap-2 w-full max-w-md px-4 mb-4">
+            <div class="flex gap-2">
+                <input id="input-he" type="text" placeholder="עברית (למשל: שלום)"
+                    class="bg-gray-800 text-white px-4 py-2.5 rounded-lg flex-1 text-right outline-none focus:border-purple-500 border border-gray-700">
+                <input id="input-en" type="text" placeholder="אנגלית (למשל: HELLO)"
+                    class="bg-gray-800 text-white px-4 py-2.5 rounded-lg flex-1 text-left outline-none focus:border-purple-500 border border-gray-700 uppercase"
+                    onkeydown="if(event.key==='Enter') addNewWord()">
+            </div>
+            <button onclick="addNewWord()"
+                class="bg-green-600 hover:bg-green-500 text-white font-bold py-2.5 rounded-lg shadow-lg transition-colors flex items-center justify-center gap-2">
+                <span>➕</span> הוסף מילה למאגר
+            </button>
+            <div id="editor-msg" class="text-center text-sm font-bold min-h-[20px]"></div>
+        </div>
+
+        <div id="word-editor-list" class="w-full max-w-md px-4 flex-1 overflow-y-auto pb-10 flex flex-col gap-2">
+            <!-- Words injected here -->
+        </div>
+    </div>
+
+    <!-- STUDIO OVERLAY -->
+    <div id="studio-overlay"
+        class="hidden fixed inset-0 z-[70] pointer-events-none flex justify-end items-start p-4">
+        <!-- Controls Sidebar -->
+        <div class="bg-gray-900/95 p-4 rounded-xl border-2 border-yellow-400 shadow-2xl text-center pointer-events-auto backdrop-blur-md w-64 flex flex-col gap-3">
+            <h2 class="text-xl font-bold text-yellow-400 border-b border-gray-700 pb-2">🛠️ סטודיו ריג</h2>
+
+            <div class="flex flex-col gap-2">
+                <p class="text-xs text-gray-400">בחר דמות לצפייה/עריכה:</p>
+                <button onclick="studioShowEnemy('none')"
+                    class="bg-gray-700 hover:bg-gray-600 text-white py-1 rounded text-sm transition-colors">גרימבל הגיבור</button>
+                <button onclick="studioShowEnemy('baron')"
+                    class="bg-gray-700 hover:bg-gray-600 text-white py-1 rounded text-sm transition-colors">ברון (שלבים 1-3)</button>
+                <button onclick="studioShowEnemy('goblin')"
+                    class="bg-gray-700 hover:bg-gray-600 text-white py-1 rounded text-sm transition-colors">גובלין (שלבים 4-6)</button>
+                <button onclick="studioShowEnemy('skeleton')"
+                    class="bg-gray-700 hover:bg-gray-600 text-white py-1 rounded text-sm transition-colors">שלד (שלבים 7+)</button>
+            </div>
+
+            <div class="mt-auto flex flex-col gap-2 pt-3 border-t border-gray-700">
+                <button onclick="saveStudio()"
+                    class="bg-green-600 hover:bg-green-500 text-white py-2 rounded-lg font-bold text-sm shadow-lg flex items-center justify-center gap-2">
+                    <span>💾</span> שמור לקונסול
+                </button>
+                <button onclick="toggleStudio()"
+                    class="bg-red-600 hover:bg-red-500 text-white py-2 rounded-lg font-bold text-sm shadow-lg">
+                    יציאה
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- VICTORY SCREEN -->
+    <div id="victory-screen"
+        class="hidden fixed inset-0 bg-black/90 flex flex-col items-center justify-center z-50 backdrop-blur-sm p-4">
+        <h1 class="text-5xl md:text-6xl font-black text-yellow-400 mb-3 animate-bounce drop-shadow-[0_0_20px_rgba(250,204,21,0.8)] text-center">
+            ניצחון אדיר! 🏆
+        </h1>
+        <div class="text-2xl md:text-3xl text-white mb-6">ניקוד: <span id="final-score" class="font-bold text-yellow-400">0</span></div>
+
+        <div class="flex flex-col gap-3 w-72">
+            <button onclick="nextLevel()"
+                class="bg-green-600 hover:bg-green-500 text-white font-bold py-3.5 rounded-xl text-xl shadow-[0_0_20px_rgba(34,197,94,0.6)] transform hover:scale-105 transition-all flex items-center justify-center gap-2">
+                <span>🚀</span> לשלב הבא
+            </button>
+
+            <button onclick="retryLevel()"
+                class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl text-lg shadow-md border-2 border-blue-400 flex items-center justify-center gap-2 transition-colors">
+                <span>🔄</span> שחק שוב (אותו שלב)
+            </button>
+
+            <button onclick="returnToMenu()"
+                class="bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 rounded-xl text-lg shadow-md flex items-center justify-center gap-2 transition-colors">
+                <span>🏠</span> חזרה לבית
+            </button>
+        </div>
+    </div>
+
+    <!-- LOSE SCREEN -->
+    <div id="lose-screen"
+        class="hidden fixed inset-0 bg-red-950/95 flex flex-col items-center justify-center z-50 backdrop-blur-sm p-4">
+        <h1 class="text-5xl md:text-6xl font-black text-white mb-3 drop-shadow-[0_0_15px_rgba(0,0,0,0.8)] text-center">
+            הפסדת בקרב!
+        </h1>
+        <h2 class="text-xl md:text-2xl text-red-200 mb-6 font-bold text-center">לא נורא, כל הגביעים נשמרים! 🏆</h2>
+
+        <div class="flex flex-col gap-3 w-72">
+            <button onclick="retryLevel()"
+                class="bg-white text-red-950 font-black py-3.5 px-8 rounded-xl text-xl hover:bg-gray-100 shadow-[0_0_20px_rgba(255,255,255,0.4)] transform hover:scale-105 transition-all flex items-center justify-center gap-2">
+                <span>⚔️</span> נסה שוב
+            </button>
+
+            <button onclick="startFromLevelOne()"
+                class="bg-red-800 hover:bg-red-700 text-white font-bold py-3 px-8 rounded-xl text-base shadow-md flex items-center justify-center gap-2 transition-colors">
+                <span>⏮️</span> התחל משלב 1
+            </button>
+
+            <button onclick="returnToMenu()"
+                class="bg-gray-800 hover:bg-gray-700 text-white font-bold py-3 px-8 rounded-xl text-base shadow-md flex items-center justify-center gap-2 transition-colors">
+                <span>🏠</span> חזרה לבית
+            </button>
+        </div>
+    </div>
+
+    <script src="js/game.js"></script>
+</body>
+
+</html>

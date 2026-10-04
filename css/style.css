@@ -1,0 +1,478 @@
+:root {
+    /* Dynamic Character Coordinates */
+    /* Grimble Rigging */
+    --torso-x: 250px;
+    --torso-y: 300px;
+    --head-x: 254px;
+    --head-y: 242px;
+    --arm-r-x: 300px;
+    --arm-r-y: 250px;
+    --arm-r-rot: -10deg;
+    --arm-l-x: 190px;
+    --arm-l-y: 270px;
+
+    /* Baron Rigging */
+    --baron-body-x: 100px;
+    --baron-body-y: 150px;
+    --baron-head-x: 100px;
+    --baron-head-y: 70px;
+    --baron-hand-l-x: 40px;
+    --baron-hand-l-y: 160px;
+    --baron-hand-r-x: 160px;
+    --baron-hand-r-y: 160px;
+
+    /* Goblin Rigging */
+    --goblin-body-x: 100px;
+    --goblin-body-y: 150px;
+    --goblin-head-x: 100px;
+    --goblin-head-y: 70px;
+    --goblin-arm-l-x: 45px;
+    --goblin-arm-l-y: 130px;
+    --goblin-arm-r-x: 155px;
+    --goblin-arm-r-y: 130px;
+
+    /* Skeleton Rigging */
+    --skel-body-x: 100px;
+    --skel-body-y: 150px;
+    --skel-head-x: 100px;
+    --skel-head-y: 70px;
+    --skel-arm-r-x: 150px;
+    --skel-arm-r-y: 130px;
+
+    /* Customization Colors (Defaults) */
+    --beard-color-start: #f5f5f5;
+    --beard-color-end: #bdbdbd;
+    --axe-blade-start: #8d6e63;
+    --axe-blade-end: #4e342e;
+}
+
+body {
+    font-family: 'Rubik', sans-serif;
+    background-color: #1a1a2e;
+    color: white;
+    overflow: hidden;
+    touch-action: manipulation;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+/* --- UI ELEMENTS --- */
+.bg-grid {
+    background-image: linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+    background-size: 20px 20px;
+}
+
+.neon-text {
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.5), 0 0 20px rgba(255, 255, 255, 0.3);
+}
+
+.btn-primary {
+    background: linear-gradient(180deg, #fbbf24 0%, #d97706 100%);
+    box-shadow: 0 4px 0 #92400e;
+    transition: transform 0.1s, box-shadow 0.1s;
+}
+
+.btn-primary:active {
+    transform: translateY(4px);
+    box-shadow: 0 0 0 #92400e;
+}
+
+.btn-secondary {
+    background: #1f2937;
+    border: 2px solid #374151;
+    box-shadow: 0 4px 0 #111827;
+    transition: transform 0.1s, box-shadow 0.1s;
+}
+
+.btn-secondary:active {
+    transform: translateY(4px);
+    box-shadow: 0 0 0 #111827;
+}
+
+.chip-draggable {
+    background: rgba(30, 41, 59, 0.95);
+    border: 2px solid #3b82f6;
+    box-shadow: 0 0 15px rgba(59, 130, 246, 0.4);
+    font-family: 'Press Start 2P', cursive;
+    text-transform: uppercase;
+    touch-action: none;
+    cursor: grab;
+    z-index: 50;
+    transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+}
+
+.chip-draggable:hover {
+    border-color: #60a5fa;
+    box-shadow: 0 0 20px rgba(96, 165, 250, 0.6);
+    transform: translateY(-2px);
+}
+
+.chip-draggable:active {
+    cursor: grabbing;
+    transform: scale(1.08);
+}
+
+/* --- CHARACTER RIGGING & ARENA --- */
+#characters-arena {
+    width: 100%;
+    height: 100%;
+    max-height: 480px;
+}
+
+.grimble-container {
+    width: 100%;
+    height: 100%;
+    max-width: 480px;
+    max-height: 480px;
+}
+
+#grimble-wrapper {
+    transition: transform 0.7s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+/* Positions using CSS Variables */
+.rig-torso {
+    transform: translate(var(--torso-x), var(--torso-y));
+}
+
+.rig-head {
+    transform: translate(var(--head-x), var(--head-y));
+}
+
+.rig-arm-right {
+    transform: translate(var(--arm-r-x), var(--arm-r-y)) rotate(var(--arm-r-rot));
+}
+
+.rig-arm-left {
+    transform: translate(var(--arm-l-x), var(--arm-l-y));
+}
+
+/* Studio Mode */
+.studio-mode .draggable:hover {
+    filter: drop-shadow(0 0 6px yellow);
+    cursor: grab;
+}
+
+.studio-mode .selected {
+    filter: drop-shadow(0 0 8px #00e5ff) !important;
+    outline: 2px dashed #00e5ff;
+}
+
+/* Game Mode Part Transitions */
+.rig-part {
+    transition: transform 0.1s;
+}
+
+/* Baron Classes */
+.baron-body {
+    transform: translate(var(--baron-body-x), var(--baron-body-y));
+}
+
+.baron-head {
+    transform: translate(var(--baron-head-x), var(--baron-head-y));
+}
+
+.baron-hand-l {
+    transform: translate(var(--baron-hand-l-x), var(--baron-hand-l-y));
+}
+
+.baron-hand-r {
+    transform: translate(var(--baron-hand-r-x), var(--baron-hand-r-y));
+}
+
+/* Goblin Classes */
+.goblin-body {
+    transform: translate(var(--goblin-body-x), var(--goblin-body-y));
+}
+
+.goblin-head {
+    transform: translate(var(--goblin-head-x), var(--goblin-head-y));
+}
+
+.goblin-arm-l {
+    transform: translate(var(--goblin-arm-l-x), var(--goblin-arm-l-y)) rotate(15deg);
+}
+
+.goblin-arm-r {
+    transform: translate(var(--goblin-arm-r-x), var(--goblin-arm-r-y)) rotate(-15deg);
+}
+
+/* Skeleton Classes */
+.skel-body {
+    transform: translate(var(--skel-body-x), var(--skel-body-y));
+}
+
+.skel-head {
+    transform: translate(var(--skel-head-x), var(--skel-head-y));
+}
+
+.skel-arm-r {
+    transform: translate(var(--skel-arm-r-x), var(--skel-arm-r-y));
+}
+
+/* Idle Breathing Animations */
+.game-mode.anim-idle .rig-torso {
+    animation: breathe 3s ease-in-out infinite;
+}
+
+.game-mode.anim-idle .rig-head {
+    animation: headBob 3s ease-in-out infinite;
+}
+
+.game-mode.anim-idle .baron-idle {
+    animation: baronFloat 3s ease-in-out infinite;
+}
+
+@keyframes breathe {
+    0%, 100% {
+        transform: translate(var(--torso-x), var(--torso-y));
+    }
+    50% {
+        transform: translate(var(--torso-x), calc(var(--torso-y) - 5px));
+    }
+}
+
+@keyframes headBob {
+    0%, 100% {
+        transform: translate(var(--head-x), var(--head-y));
+    }
+    50% {
+        transform: translate(var(--head-x), calc(var(--head-y) - 3px));
+    }
+}
+
+@keyframes baronFloat {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-8px);
+    }
+}
+
+.game-mode.anim-run .grimble-container {
+    animation: runBounce 0.4s infinite;
+}
+
+.game-mode.anim-run .rig-arm-right {
+    animation: runArm 0.4s infinite;
+}
+
+@keyframes runBounce {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+@keyframes runArm {
+    0%, 100% {
+        transform: translate(var(--arm-r-x), var(--arm-r-y)) rotate(-10deg);
+    }
+    50% {
+        transform: translate(var(--arm-r-x), var(--arm-r-y)) rotate(10deg);
+    }
+}
+
+/* ATTACK ANIMATIONS */
+.game-mode.anim-attack .rig-arm-right {
+    animation: attackSwing 0.5s cubic-bezier(0.36, 0, 0.66, -0.56) forwards;
+}
+
+.game-mode.anim-attack .grimble-container {
+    animation: lunge 0.5s ease-out forwards;
+}
+
+@keyframes attackSwing {
+    0% {
+        transform: translate(var(--arm-r-x), var(--arm-r-y)) rotate(-10deg);
+    }
+    40% {
+        transform: translate(var(--arm-r-x), calc(var(--arm-r-y) - 60px)) rotate(-110deg);
+    }
+    100% {
+        transform: translate(var(--arm-r-x), calc(var(--arm-r-y) + 60px)) rotate(80deg);
+    }
+}
+
+@keyframes lunge {
+    0% {
+        transform: translateX(0);
+    }
+    50% {
+        transform: translateX(50px);
+    }
+    100% {
+        transform: translateX(0);
+    }
+}
+
+/* ENEMY ATTACK ANIMATION */
+.anim-baron-attack, .anim-enemy-attack {
+    animation: enemyStrike 0.45s ease-out forwards;
+}
+
+@keyframes enemyStrike {
+    0% {
+        transform: translate(0, 0);
+    }
+    40% {
+        transform: translate(25px, -20px) rotate(10deg);
+    }
+    60% {
+        transform: translate(-120px, 15px) rotate(-12deg);
+    }
+    100% {
+        transform: translate(0, 0);
+    }
+}
+
+/* ENEMY DEFEAT ANIMATION */
+.enemy-defeat {
+    animation: enemyVanquish 0.8s forwards !important;
+}
+
+@keyframes enemyVanquish {
+    0% {
+        opacity: 1;
+        transform: scale(1) rotate(0deg);
+    }
+    40% {
+        opacity: 0.9;
+        transform: scale(1.1) rotate(15deg);
+        filter: brightness(2) drop-shadow(0 0 15px gold);
+    }
+    100% {
+        opacity: 0;
+        transform: scale(0.2) rotate(45deg) translateY(60px);
+    }
+}
+
+.anim-hit .grimble-container {
+    animation: shake 0.3s both;
+    filter: sepia(1) hue-rotate(-50deg) saturate(3);
+}
+
+.gauntlet-glow {
+    animation: pulseGlow 2s infinite ease-in-out;
+}
+
+@keyframes pulseGlow {
+    0%, 100% {
+        filter: drop-shadow(0 0 3px #00e5ff);
+        fill: #00e5ff;
+    }
+    50% {
+        filter: drop-shadow(0 0 12px #80d8ff);
+        fill: #80d8ff;
+    }
+}
+
+.laser-eye {
+    animation: laserBlink 3s infinite;
+}
+
+@keyframes laserBlink {
+    0%, 90% {
+        opacity: 0.8;
+        fill: #ef5350;
+    }
+    95% {
+        opacity: 1;
+        fill: #ff0000;
+        filter: drop-shadow(0 0 6px red);
+    }
+    100% {
+        opacity: 0.8;
+        fill: #ef5350;
+    }
+}
+
+.shake-screen {
+    animation: shake 0.3s cubic-bezier(.36, .07, .19, .97) both;
+}
+
+@keyframes shake {
+    10%, 90% { transform: translate3d(-2px, 0, 0); }
+    20%, 80% { transform: translate3d(3px, 0, 0); }
+    30%, 50%, 70% { transform: translate3d(-5px, 0, 0); }
+    40%, 60% { transform: translate3d(5px, 0, 0); }
+}
+
+.flash-effect {
+    animation: flashWhite 0.2s forwards;
+}
+
+@keyframes flashWhite {
+    0%, 100% { background: transparent; }
+    50% { background: rgba(255, 255, 255, 0.25); }
+}
+
+.flash-red {
+    animation: flashRed 0.25s forwards;
+}
+
+@keyframes flashRed {
+    0%, 100% { background: transparent; }
+    50% { background: rgba(239, 68, 68, 0.35); }
+}
+
+/* DROP ZONE HIGHLIGHT (Native SVG styling) */
+#drop-zone-highlight {
+    animation: pulseZone 1.5s infinite ease-in-out;
+    transition: stroke-opacity 0.2s, fill-opacity 0.2s;
+}
+
+@keyframes pulseZone {
+    0%, 100% {
+        stroke-opacity: 0.4;
+        fill-opacity: 0.12;
+    }
+    50% {
+        stroke-opacity: 0.9;
+        fill-opacity: 0.25;
+    }
+}
+
+/* Floating Damage / Score Text */
+.floating-text {
+    position: fixed;
+    font-family: 'Press Start 2P', cursive;
+    font-size: 20px;
+    font-weight: bold;
+    color: #ffeb3b;
+    text-shadow: 2px 2px 0 #000, -1px -1px 0 #000;
+    pointer-events: none;
+    z-index: 100;
+    animation: floatUp 0.9s ease-out forwards;
+}
+
+@keyframes floatUp {
+    0% {
+        transform: translateY(0) scale(0.9);
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(-50px) scale(1.3);
+        opacity: 0;
+    }
+}
+
+/* Battle Movement */
+.battle-position {
+    transform: translateX(-80px) !important;
+}
+
+@media (min-width: 768px) {
+    .battle-position {
+        transform: translateX(-120px) !important;
+    }
+}
+
+.item-locked {
+    opacity: 0.5;
+    pointer-events: none;
+}
